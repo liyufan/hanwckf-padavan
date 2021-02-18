@@ -46,7 +46,49 @@ jobs:
         run: |
           cd trunk
           mkdir -p ${images_dir}
-          for m in $targets; do fakeroot ./build_firmware_ci $m; \
+          
+          for m in $targets; do
+          if [ ! -f configs/templates/$m.config ] ; then
+          echo "configs/templates/$m.config not found "
+          exit 1
+          fi
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_SCUTCLIENT/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_GDUT_DRCOM/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_DOGCOM/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_MINIEAP/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_NJIT_CLIENT/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_NAPT66/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_SHADOWSOCKS/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_SSSERVER/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_SERVER/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_CLIENT/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_CMD/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_DNSFORWARDER/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_VLMCSD/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_TTYD/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_LRZSZ/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_HTOP/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_NANO/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_IPERF3/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_DUMP1090/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_RTL_SDR/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_SMBD36/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_MTR/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_SOCAT/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_SRELAY/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_3PROXY/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_MENTOHUST/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_FRPC/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_FRPS/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_TUNSAFE/d' configs/templates/$m.config
+          sed -i '/CONFIG_FIRMWARE_INCLUDE_WIREGUARD/d' configs/templates/$m.config
+
+          echo "CONFIG_FIRMWARE_INCLUDE_VLMCSD=y" >> configs/templates/$m.config
+          echo "CONFIG_FIRMWARE_INCLUDE_TTYD=y" >> configs/templates/$m.config
+          echo "CONFIG_FIRMWARE_INCLUDE_HTOP=y" >> configs/templates/$m.config
+          sed -i 's/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=n/CONFIG_FIRMWARE_INCLUDE_OPENSSL_EXE=y/g' configs/templates/$m.config
+          
+          fakeroot ./build_firmware_ci $m; \
           if [ $? = 0 ]; then cp -f images/*.trx ${images_dir}/$m.trx; else exit 1; fi; \
           ./clear_tree_simple >/dev/null 2>&1; done
       - name: Create archive
@@ -55,11 +97,11 @@ jobs:
           ls -lh ${images_dir}
           GIT_VERSION=`git rev-parse --short=7 HEAD 2>/dev/null` && [ -n "$GIT_VERSION" ] && \
           image_name=images_${build_variant}_${GIT_VERSION} || image_name=images_${build_variant}
-          cd ${images_dir}; md5sum *.trx |tee md5sum.txt; 7z a -mx=9 ${image_name}.7z ./*
+          cd ${images_dir}; md5sum *.trx | tee md5sum.txt; 7z a -mx=9 ${image_name}.7z ./*
           echo "image_name=${image_name}" >> $GITHUB_ENV
       - name: Upload images to Artifact
         if: ${{ github.event_name != 'release' && success() }}
-        uses: actions/upload-artifact@v2.2.2
+        uses: actions/upload-artifact@v2
         with:
           name: ${{ env.image_name }}
           path: ${{ env.images_dir }}/*.7z
